@@ -1,6 +1,7 @@
 package au.edu.sydney.brawndo.erp.spfea.products;
 
 import au.edu.sydney.brawndo.erp.ordering.Product;
+import java.util.Arrays;
 
 public class ProductImpl implements Product {
 
@@ -67,5 +68,20 @@ public class ProductImpl implements Product {
     public String toString() {
 
         return String.format("%s", name);
+    }
+
+    @Override
+    public boolean equals(Object other) {
+        if (other == null) return false;
+        if (other == this) return true;
+        if (!(other instanceof Product)) return false;
+        Product otherProduct = (Product)other;
+        return (this.getCost() == otherProduct.getCost() &&
+                this.getProductName().equals(otherProduct.getProductName()) &&
+                Arrays.equals(this.getManufacturingData(), otherProduct.getManufacturingData()) &&
+                Arrays.equals(this.getRecipeData(), otherProduct.getRecipeData()) &&
+                Arrays.equals(this.getMarketingData(), otherProduct.getMarketingData()) &&
+                Arrays.equals(this.getSafetyData(), otherProduct.getSafetyData()) &&
+                Arrays.equals(this.getLicensingData(), otherProduct.getLicensingData()));
     }
 }
