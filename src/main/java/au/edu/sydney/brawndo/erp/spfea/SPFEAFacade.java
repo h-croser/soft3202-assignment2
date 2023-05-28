@@ -17,6 +17,7 @@ import java.util.List;
 @SuppressWarnings("Duplicates")
 public class SPFEAFacade {
     private AuthToken token;
+    private final ValueHolderCustomerImpl customerHolder = new ValueHolderCustomerImpl();
 
     public boolean login(String userName, String password) {
         token = AuthModule.login(userName, password);
@@ -109,7 +110,7 @@ public class SPFEAFacade {
             throw new SecurityException();
         }
 
-        return new CustomerImpl(token, id);
+        return this.customerHolder.getCustomer(token, id);
     }
 
     public boolean removeOrder(int id) {
