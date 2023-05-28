@@ -2,16 +2,17 @@ package au.edu.sydney.brawndo.erp.spfea.products;
 
 import au.edu.sydney.brawndo.erp.ordering.Product;
 import java.util.Arrays;
+import java.util.Objects;
 
 public class ProductImpl implements Product {
 
     private final String name;
-    private final double[] manufacturingData;
     private final double cost;
-    private double[] recipeData;
-    private double[] marketingData;
-    private double[] safetyData;
-    private double[] licensingData;
+    private final double[] manufacturingData;
+    private final double[] recipeData;
+    private final double[] marketingData;
+    private final double[] safetyData;
+    private final double[] licensingData;
 
     public ProductImpl(String name,
                        double cost,
@@ -72,6 +73,9 @@ public class ProductImpl implements Product {
 
     @Override
     public boolean equals(Object other) {
+        /*
+         * Part of the Value Object pattern. All immutable fields of each object are compared for equality.
+         */
         if (other == null) return false;
         if (other == this) return true;
         if (!(other instanceof Product)) return false;
@@ -83,5 +87,20 @@ public class ProductImpl implements Product {
                 Arrays.equals(this.getMarketingData(), otherProduct.getMarketingData()) &&
                 Arrays.equals(this.getSafetyData(), otherProduct.getSafetyData()) &&
                 Arrays.equals(this.getLicensingData(), otherProduct.getLicensingData()));
+    }
+
+    @Override
+    public int hashCode() {
+        /*
+         * Part of the Value Object pattern. All immutable fields of each object are added to the hash.
+         */
+        int hash = Objects.hash(this.name, this.cost);
+        hash = 31 * hash + Arrays.hashCode(this.manufacturingData);
+        hash = 31 * hash + Arrays.hashCode(this.recipeData);
+        hash = 31 * hash + Arrays.hashCode(this.marketingData);
+        hash = 31 * hash + Arrays.hashCode(this.safetyData);
+        hash = 31 * hash + Arrays.hashCode(this.licensingData);
+
+        return hash;
     }
 }
