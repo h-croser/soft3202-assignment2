@@ -7,8 +7,10 @@ import au.edu.sydney.brawndo.erp.ordering.Customer;
 import au.edu.sydney.brawndo.erp.ordering.Order;
 import au.edu.sydney.brawndo.erp.ordering.Product;
 import au.edu.sydney.brawndo.erp.spfea.ordering.*;
+import au.edu.sydney.brawndo.erp.spfea.products.ProductDataFlyweightFactory;
 import au.edu.sydney.brawndo.erp.spfea.products.ProductDatabase;
 
+import au.edu.sydney.brawndo.erp.spfea.products.ProductImpl;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -18,6 +20,7 @@ import java.util.List;
 public class SPFEAFacade {
     private AuthToken token;
     private final ValueHolderCustomerImpl customerHolder = new ValueHolderCustomerImpl();
+    private final ProductDataFlyweightFactory dataFlyweightFactory = new ProductDataFlyweightFactory();
 
     public boolean login(String userName, String password) {
         token = AuthModule.login(userName, password);
@@ -127,7 +130,28 @@ public class SPFEAFacade {
             throw new SecurityException();
         }
 
-        return new ArrayList<>(ProductDatabase.getTestProducts());
+        // The memory inefficient list of Products supplied by the database will be garbage-collected when the method returns.
+        List<Product> dbProducts = new ArrayList<>(ProductDatabase.getTestProducts());
+
+        List<Product> products = new ArrayList<>();
+        String productName;
+        double productCost;
+        double[] manufacturingData, recipeData, marketingData, safetyData, licensingData;
+        // The dataFlyweightFactory is queried for Product data flyweights for each of the
+        // large-in-memory double arrays that are attributes of ProductImpl
+        for (Product dbProduct : dbProducts) {
+            productName = dbProduct.getProductName();
+            productCost = dbProduct.getCost();
+            manufacturingData = this.dataFlyweightFactory.getProductDataFlyweight(dbProduct.getManufacturingData());
+            recipeData = this.dataFlyweightFactory.getProductDataFlyweight(dbProduct.getRecipeData());
+            marketingData = this.dataFlyweightFactory.getProductDataFlyweight(dbProduct.getMarketingData());
+            safetyData = this.dataFlyweightFactory.getProductDataFlyweight(dbProduct.getSafetyData());
+            licensingData = this.dataFlyweightFactory.getProductDataFlyweight(dbProduct.getLicensingData());
+
+            products.add(new ProductImpl(productName, productCost, manufacturingData, recipeData, marketingData, safetyData, licensingData));
+        }
+
+        return products;
     }
 
     public boolean finaliseOrder(int orderID, List<String> contactPriority) {
