@@ -137,9 +137,9 @@ public class SPFEAFacade {
         String productName;
         double productCost;
         double[] manufacturingData, recipeData, marketingData, safetyData, licensingData;
-        // The dataFlyweightFactory is queried for Product data flyweights for each of the
-        // large-in-memory double arrays that are attributes of ProductImpl
         for (Product dbProduct : dbProducts) {
+            // The dataFlyweightFactory is queried for Product data flyweights for each of the
+            // large-in-memory double arrays that are attributes of ProductImpl
             productName = dbProduct.getProductName();
             productCost = dbProduct.getCost();
             manufacturingData = this.dataFlyweightFactory.getProductDataFlyweight(dbProduct.getManufacturingData());
