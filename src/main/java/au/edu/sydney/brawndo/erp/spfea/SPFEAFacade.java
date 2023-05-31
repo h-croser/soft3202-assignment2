@@ -6,6 +6,7 @@ import au.edu.sydney.brawndo.erp.database.TestDatabase;
 import au.edu.sydney.brawndo.erp.ordering.Customer;
 import au.edu.sydney.brawndo.erp.ordering.Order;
 import au.edu.sydney.brawndo.erp.ordering.Product;
+import au.edu.sydney.brawndo.erp.spfea.contact.*;
 import au.edu.sydney.brawndo.erp.spfea.ordering.*;
 import au.edu.sydney.brawndo.erp.spfea.products.ProductDataFlyweightFactory;
 import au.edu.sydney.brawndo.erp.spfea.products.ProductDatabase;
@@ -159,50 +160,45 @@ public class SPFEAFacade {
             throw new SecurityException();
         }
 
-        List<ContactMethod> contactPriorityAsMethods = new ArrayList<>();
-
+        List<ContactHandler> contactHandlerPriority = new ArrayList<>();
+        // Sets a priority order according to the given list of Strings
         if (null != contactPriority) {
+            ContactHandler currHandler;
             for (String method: contactPriority) {
-                switch (method.toLowerCase()) {
-                    case "merchandiser":
-                        contactPriorityAsMethods.add(ContactMethod.MERCHANDISER);
-                        break;
-                    case "email":
-                        contactPriorityAsMethods.add(ContactMethod.EMAIL);
-                        break;
-                    case "carrier pigeon":
-                        contactPriorityAsMethods.add(ContactMethod.CARRIER_PIGEON);
-                        break;
-                    case "mail":
-                        contactPriorityAsMethods.add(ContactMethod.MAIL);
-                        break;
-                    case "phone call":
-                        contactPriorityAsMethods.add(ContactMethod.PHONECALL);
-                        break;
-                    case "sms":
-                        contactPriorityAsMethods.add(ContactMethod.SMS);
-                        break;
-                    default:
-                        break;
+                currHandler = ContactHandlerFactory.createHandlerInstance(method);
+                // Only valid ContactHandlers should be added to the priority list
+                if (null != currHandler) {
+                    contactHandlerPriority.add(currHandler);
                 }
             }
         }
-
-        if (contactPriorityAsMethods.size() == 0) { // needs setting to default
-            contactPriorityAsMethods = Arrays.asList(
-                    ContactMethod.MERCHANDISER,
-                    ContactMethod.EMAIL,
-                    ContactMethod.CARRIER_PIGEON,
-                    ContactMethod.MAIL,
-                    ContactMethod.PHONECALL
+        // Sets a default priority order if none were provided or if no valid methods were provided
+        if (contactHandlerPriority.size() == 0) {
+            contactHandlerPriority = Arrays.asList(
+                ContactHandlerFactory.createHandlerInstance("Merchandiser"),
+                ContactHandlerFactory.createHandlerInstance("Email"),
+                ContactHandlerFactory.createHandlerInstance("Carrier Pigeon"),
+                ContactHandlerFactory.createHandlerInstance("Mail"),
+                ContactHandlerFactory.createHandlerInstance("Phone call")
             );
         }
 
-        Order order = TestDatabase.getInstance().getOrder(token, orderID);
+        // Sets successors for each contact methods in the list, setting the successor of the selected
+        // ContactHandler to the previous handler in the list
+        ContactHandler prevHandler;
+        for (int i = 1; i < contactHandlerPriority.size(); i++) {
+            prevHandler = contactHandlerPriority.get(i-1);
+            contactHandlerPriority.get(i).setSuccessor(prevHandler);
+        }
 
+        // Mark the order as finalised in the database
+        Order order = TestDatabase.getInstance().getOrder(token, orderID);
         order.finalise();
         TestDatabase.getInstance().saveOrder(token, order);
-        return ContactHandler.sendInvoice(token, getCustomer(order.getCustomer()), contactPriorityAsMethods, order.generateInvoiceData());
+
+        // The first priority ContactHandler object is the only object required for the chain of responsibility to be invoked
+        ContactHandler rootHandler = contactHandlerPriority.get(0);
+        return rootHandler.sendInvoice(token, getCustomer(order.getCustomer()), order.generateInvoiceData());
     }
 
     public void logout() {
@@ -272,6 +268,6 @@ public class SPFEAFacade {
         throw new SecurityException();
     }
 
-        return ContactHandler.getKnownMethods();
+        return ContactHandlerFactory.getKnownMethods();
     }
 }
