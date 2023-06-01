@@ -6,11 +6,28 @@
 
 #### Flyweight
 
-- Flyweight Factory: spfea.products.ProductDataFlyweightFactory
+- Client: spfea.SPFEAFacade
+- ConcreteFlyweight: arrays of doubles
   - Only the Factory component of the Flyweight pattern is necessary. The Flyweight object itself is unnecessary because there is no extrinsic state within the data and there are no shared operations beyond the double array methods
-  - SPFEAFacade.getAllProducts() now calls ProductDataFlyweightFactory.getProductDataFlyweight() for each ProductImpl attribute
+- Flyweight Factory: spfea.products.ProductDataFlyweightFactory
 
 ### Too Many Orders
+
+#### Bridge
+
+- Client: spfea.SPFEAFacade
+- Abstraction: ordering.Order
+  - RefinedAbstraction: spfea.ordering.OrderImpl
+- Implementor: spfea.ordering.DescriptionImplementor
+  - ConcreteImplementor: spfea.ordering.BasicDescriptionImplementor
+- Implementor: spfea.ordering.DiscountImplementor
+  - ConcreteImplementor: spfea.ordering.BulkDiscountImplementor
+  - ConcreteImplementor: spfea.ordering.FlatDiscountImplementor
+- Implementor: spfea.ordering.InvoiceDataImplementor
+  - ConcreteImplementor: spfea.ordering.BusinessInvoiceDataImplementor
+  - ConcreteImplementor: spfea.ordering.PersonalInvoiceDataImplementor
+
+All implementations of Order previously in the spfea.ordering package were removed as they are now redundant
 
 ### Bulky Contact Method
 
@@ -31,7 +48,8 @@
 - Factory: spfea.contact.ContactHandlerFactory
   - This Factory acts as both interface and implementation in this variant because there are not multiple families of objects to create in this case (as outlined in GoF).
     Additionally, the ContactHandler objects can be created without any unique information passed to their constructors, so a single Factory can create all objects
-  - The existing spfea.ContactMethod and spfea.ContactHandler were removed as they are now redundant
+
+The existing spfea.ContactMethod and spfea.ContactHandler were removed as they are now redundant
 
 ### System Lag
 
@@ -39,7 +57,8 @@
 
 - Value Holder: spfea.ValueHolderCustomerImpl
   - Standard Value Holder pattern applied to CustomerImpl, with the modification that it contains a collection for cached CustomerImpl objects
-  - SPFEAFacade.getCustomer() now calls ValueHolderCustomerImpl.getCustomer() instead of creating an instance of CustomerImpl()
+
+SPFEAFacade.getCustomer() now calls ValueHolderCustomerImpl.getCustomer() instead of creating an instance of CustomerImpl()
 
 ### Hard to Compare Products
 

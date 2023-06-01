@@ -58,43 +58,36 @@ public class SPFEAFacade {
 
         double discountRate = 1.0 - (discountRateRaw / 100.0);
 
-        Order order;
-
         if (!TestDatabase.getInstance().getCustomerIDs(token).contains(customerID)) {
             throw new IllegalArgumentException("Invalid customer ID");
         }
 
         int id = TestDatabase.getInstance().getNextOrderID();
 
-        if (isSubscription) {
-            if (1 == discountType) { // 1 is flat rate
-                    if (isBusiness) {
-                         order = new NewOrderImplSubscription(id, date, customerID, discountRate, numShipments);
-                    } else {
-                        order = new Order66Subscription(id, date, discountRate, customerID, numShipments);
-                    }
-                } else if (2 == discountType) { // 2 is bulk discount
-                    if (isBusiness) {
-                        order = new BusinessBulkDiscountSubscription(id, customerID, date, discountThreshold, discountRate, numShipments);
-                    } else {
-                        order = new FirstOrderSubscription(id, date, discountRate, discountThreshold, customerID, numShipments);
-                    }
-            } else {return null;}
+        Order order;
+        DiscountImplementor discountImplementor;
+        InvoiceDataImplementor invoiceDataImplementor;
+        DescriptionImplementor descriptionImplementor = new BasicDescriptionImplementor();
+        if (1 == discountType) { // 1 is flat rate
+            discountImplementor = new FlatDiscountImplementor(discountRate);
+        } else if (2 == discountType) { // 2 is bulk discount
+            discountImplementor = new BulkDiscountImplementor(discountRate, discountThreshold);
         } else {
-            if (1 == discountType) {
-                if (isBusiness) {
-                    order = new NewOrderImpl(id, date, customerID, discountRate);
-                } else {
-                    order = new Order66(id, date, discountRate, customerID);
-                }
-            } else if (2 == discountType) {
-                if (isBusiness) {
-                    order = new BusinessBulkDiscountOrder(id, customerID, date, discountThreshold, discountRate);
-                } else {
-                    order = new FirstOrder(id, date, discountRate, discountThreshold, customerID);
-                }
-            } else {return null;}
+            return null;
         }
+
+        if (isBusiness) {
+            invoiceDataImplementor = new BusinessInvoiceDataImplementor();
+        } else {
+            invoiceDataImplementor = new PersonalInvoiceDataImplementor();
+        }
+
+        // If the order isn't a subscription, there must only be one shipment
+        if (!isSubscription) {
+            numShipments = 1;
+        }
+
+        order = new OrderImpl(id, customerID, date, numShipments, discountImplementor, invoiceDataImplementor, descriptionImplementor);
 
         TestDatabase.getInstance().saveOrder(token, order);
         return order.getOrderID();
