@@ -69,5 +69,20 @@ SPFEAFacade.getCustomer() now calls ValueHolderCustomerImpl.getCustomer() instea
 
 ### Slow Order Creation
 
+#### Unit of Work
+
+- Client: spfea.SPFEAFacade
+- Database: database.TestDatabase
+- Unit of Work: spfea.database.OrderDatabaseUnitOfWork
+- Concrete Unit of Work: spfea.database.OrderDatabaseUnitOfWorkImpl
+  - OrderDatabaseUnitOfWorkImpl also contains methods to provide the client with access to some order repository methods
+
+#### Repository
+
+- Repository: spfea.database.OrderRepository
+- Concrete Repository: spfea.database.OrderRepositoryImpl
+
 ## Notes About the Submission
 
+- Package references in this readme are relative to au.edu.sydney.brawndo.erp 
+- The public methods in spfea.SPFEAFacade are not commented with javadocs as they should be identical externally to the old codebase

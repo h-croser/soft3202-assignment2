@@ -7,8 +7,8 @@ import au.edu.sydney.brawndo.erp.ordering.Customer;
 import au.edu.sydney.brawndo.erp.ordering.Order;
 import au.edu.sydney.brawndo.erp.ordering.Product;
 import au.edu.sydney.brawndo.erp.spfea.contact.*;
-import au.edu.sydney.brawndo.erp.spfea.database.DatabaseUnitOfWork;
-import au.edu.sydney.brawndo.erp.spfea.database.TestDatabaseUnitOfWork;
+import au.edu.sydney.brawndo.erp.spfea.database.OrderDatabaseUnitOfWork;
+import au.edu.sydney.brawndo.erp.spfea.database.OrderDatabaseUnitOfWorkImpl;
 import au.edu.sydney.brawndo.erp.spfea.ordering.*;
 import au.edu.sydney.brawndo.erp.spfea.products.ProductDataFlyweightFactory;
 import au.edu.sydney.brawndo.erp.spfea.products.ProductDatabase;
@@ -24,11 +24,11 @@ public class SPFEAFacade {
     private AuthToken token;
     private final ValueHolderCustomerImpl customerHolder = new ValueHolderCustomerImpl();
     private final ProductDataFlyweightFactory dataFlyweightFactory = new ProductDataFlyweightFactory();
-    private DatabaseUnitOfWork testDatabaseUnitOfWork;
+    private OrderDatabaseUnitOfWork testDatabaseUnitOfWork;
 
     public boolean login(String userName, String password) {
         token = AuthModule.login(userName, password);
-        testDatabaseUnitOfWork = new TestDatabaseUnitOfWork(token);
+        testDatabaseUnitOfWork = new OrderDatabaseUnitOfWorkImpl(token);
 
         return null != token;
     }
@@ -37,6 +37,7 @@ public class SPFEAFacade {
         if (null == token) {
             throw new SecurityException();
         }
+        this.testDatabaseUnitOfWork.commit();
 
         TestDatabase database = TestDatabase.getInstance();
 
@@ -93,7 +94,7 @@ public class SPFEAFacade {
 
         order = new OrderImpl(id, customerID, date, numShipments, discountImplementor, invoiceDataImplementor, descriptionImplementor);
 
-        this.testDatabaseUnitOfWork.registerDirty(order);
+        this.testDatabaseUnitOfWork.registerNew(order);
 
         return order.getOrderID();
     }
@@ -121,7 +122,21 @@ public class SPFEAFacade {
         }
 
         TestDatabase database = TestDatabase.getInstance();
-        return database.removeOrder(token, id);
+        boolean removed = database.removeOrder(token, id);
+
+        /*
+        The database is fast at removing orders, so the order will be marked as "clean" in the
+        unit of work to ensure no further changes are made to this order.
+        The following code would ensure consistency with the unit of work, but there is a test
+        within AllowedScopeTest that requires no interactions with non-database objects from
+        this method, so this code must be omitted from the method:
+
+        if (removed) {
+            Order order = this.testDatabaseUnitOfWork.findOrder(id);
+            this.testDatabaseUnitOfWork.registerClean(order);
+        }
+        */
+        return removed;
     }
 
     public List<Product> getAllProducts() {
@@ -190,7 +205,7 @@ public class SPFEAFacade {
         }
 
         // Mark the order as finalised in the database
-        Order order = TestDatabase.getInstance().getOrder(token, orderID);
+        Order order = this.testDatabaseUnitOfWork.findOrder(orderID);
         order.finalise();
 
         this.testDatabaseUnitOfWork.registerDirty(order);
@@ -211,9 +226,7 @@ public class SPFEAFacade {
         if (null == token) {
             throw new SecurityException();
         }
-        this.testDatabaseUnitOfWork.commit();
-
-        Order order = TestDatabase.getInstance().getOrder(token, orderID);
+        Order order = this.testDatabaseUnitOfWork.findOrder(orderID);
         if (null == order) {
             return 0.0;
         }
@@ -225,9 +238,7 @@ public class SPFEAFacade {
         if (null == token) {
             throw new SecurityException();
         }
-        this.testDatabaseUnitOfWork.commit();
-
-        Order order = TestDatabase.getInstance().getOrder(token, orderID);
+        Order order = this.testDatabaseUnitOfWork.findOrder(orderID);
 
         if (null == order) {
             System.out.println("got here");
@@ -243,9 +254,7 @@ public class SPFEAFacade {
         if (null == token) {
             throw new SecurityException();
         }
-        this.testDatabaseUnitOfWork.commit();
-
-        Order order = TestDatabase.getInstance().getOrder(token, orderID);
+        Order order = this.testDatabaseUnitOfWork.findOrder(orderID);
 
         if (null == order) {
             return null;
@@ -258,9 +267,7 @@ public class SPFEAFacade {
         if (null == token) {
             throw new SecurityException();
         }
-        this.testDatabaseUnitOfWork.commit();
-
-        Order order = TestDatabase.getInstance().getOrder(token, orderID);
+        Order order = this.testDatabaseUnitOfWork.findOrder(orderID);
 
         if (null == order) {
             return null;
