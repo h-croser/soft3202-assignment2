@@ -110,9 +110,17 @@ public class OrderImpl implements Order {
 
   @Override
   public Order copy() {
-    return new OrderImpl(this.id, this.customerID, this.date, this.numShipments,
-                        this.discountImplementor.copy(), this.invoiceDataImplementor.copy(),
-                        this.descriptionImplementor.copy());
+    Order orderCopy = new OrderImpl(this.id, this.customerID, this.date, this.numShipments,
+                      this.discountImplementor.copy(), this.invoiceDataImplementor.copy(),
+                      this.descriptionImplementor.copy());
+    for (Product product: this.products.keySet()) {
+      orderCopy.setProduct(product, this.products.get(product));
+    }
+    // The orderCopy object will not be finalised, even if this Order object is.
+    // This has been done to preserve functionality from the original codebase.
+    // Relevant Ed thread: https://edstem.org/au/courses/11117/discussion/1408905
+
+    return orderCopy;
   }
 
   @Override
