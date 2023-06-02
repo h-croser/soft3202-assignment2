@@ -63,7 +63,7 @@ public class BasicDescriptionImplementor implements DescriptionImplementor {
     }
 
     StringBuilder outSB = new StringBuilder();
-    outSB.append(String.format(isFinalised ? "" : "*NOT FINALISED*\n"));
+    outSB.append(isFinalised ? "" : "*NOT FINALISED*\n");
     outSB.append(String.format("Order details (id #%d)\nDate: %s\n", orderID, date.format(
         DateTimeFormatter.ISO_LOCAL_DATE)));
     if (numShipments > 1) {
