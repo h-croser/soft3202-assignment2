@@ -7,6 +7,8 @@ import au.edu.sydney.brawndo.erp.ordering.Customer;
 import au.edu.sydney.brawndo.erp.ordering.Order;
 import au.edu.sydney.brawndo.erp.ordering.Product;
 import au.edu.sydney.brawndo.erp.spfea.contact.*;
+import au.edu.sydney.brawndo.erp.spfea.database.DatabaseUnitOfWork;
+import au.edu.sydney.brawndo.erp.spfea.database.TestDatabaseUnitOfWork;
 import au.edu.sydney.brawndo.erp.spfea.ordering.*;
 import au.edu.sydney.brawndo.erp.spfea.products.ProductDataFlyweightFactory;
 import au.edu.sydney.brawndo.erp.spfea.products.ProductDatabase;
@@ -22,9 +24,11 @@ public class SPFEAFacade {
     private AuthToken token;
     private final ValueHolderCustomerImpl customerHolder = new ValueHolderCustomerImpl();
     private final ProductDataFlyweightFactory dataFlyweightFactory = new ProductDataFlyweightFactory();
+    private DatabaseUnitOfWork testDatabaseUnitOfWork;
 
     public boolean login(String userName, String password) {
         token = AuthModule.login(userName, password);
+        testDatabaseUnitOfWork = new TestDatabaseUnitOfWork(token);
 
         return null != token;
     }
@@ -89,7 +93,8 @@ public class SPFEAFacade {
 
         order = new OrderImpl(id, customerID, date, numShipments, discountImplementor, invoiceDataImplementor, descriptionImplementor);
 
-        TestDatabase.getInstance().saveOrder(token, order);
+        this.testDatabaseUnitOfWork.registerDirty(order);
+
         return order.getOrderID();
     }
 
@@ -187,7 +192,9 @@ public class SPFEAFacade {
         // Mark the order as finalised in the database
         Order order = TestDatabase.getInstance().getOrder(token, orderID);
         order.finalise();
-        TestDatabase.getInstance().saveOrder(token, order);
+
+        this.testDatabaseUnitOfWork.registerDirty(order);
+        this.testDatabaseUnitOfWork.commit();
 
         // The first priority ContactHandler object is the only object required for the chain of responsibility to be invoked
         ContactHandler rootHandler = contactHandlerPriority.get(0);
@@ -195,6 +202,7 @@ public class SPFEAFacade {
     }
 
     public void logout() {
+        this.testDatabaseUnitOfWork.commit();
         AuthModule.logout(token);
         token = null;
     }
@@ -203,6 +211,7 @@ public class SPFEAFacade {
         if (null == token) {
             throw new SecurityException();
         }
+        this.testDatabaseUnitOfWork.commit();
 
         Order order = TestDatabase.getInstance().getOrder(token, orderID);
         if (null == order) {
@@ -216,6 +225,7 @@ public class SPFEAFacade {
         if (null == token) {
             throw new SecurityException();
         }
+        this.testDatabaseUnitOfWork.commit();
 
         Order order = TestDatabase.getInstance().getOrder(token, orderID);
 
@@ -226,13 +236,14 @@ public class SPFEAFacade {
 
         order.setProduct(product, qty);
 
-        TestDatabase.getInstance().saveOrder(token, order);
+        this.testDatabaseUnitOfWork.registerDirty(order);
     }
 
     public String getOrderLongDesc(int orderID) {
         if (null == token) {
             throw new SecurityException();
         }
+        this.testDatabaseUnitOfWork.commit();
 
         Order order = TestDatabase.getInstance().getOrder(token, orderID);
 
@@ -247,6 +258,7 @@ public class SPFEAFacade {
         if (null == token) {
             throw new SecurityException();
         }
+        this.testDatabaseUnitOfWork.commit();
 
         Order order = TestDatabase.getInstance().getOrder(token, orderID);
 
@@ -257,9 +269,10 @@ public class SPFEAFacade {
         return order.shortDesc();
     }
 
-    public List<String> getKnownContactMethods() {if (null == token) {
-        throw new SecurityException();
-    }
+    public List<String> getKnownContactMethods() {
+        if (null == token) {
+            throw new SecurityException();
+        }
 
         return ContactHandlerFactory.getKnownMethods();
     }
